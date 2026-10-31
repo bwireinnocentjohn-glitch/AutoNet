@@ -3,7 +3,6 @@ package com.autonet.app
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraCharacteristics
 import android.media.AudioManager
@@ -35,7 +34,8 @@ object CommandRouter {
             }
             cmd.startsWith("open") -> {
                 val appName = cmd.replace("open", "").trim()
-                openApp(context, appName)
+                if (appName.contains("camera")) { openCamera(context); "Opening camera." } 
+                else { openApp(context, appName) }
             }
             cmd.contains("calculate") || cmd.contains("plus") || cmd.contains("minus") || cmd.contains("times") -> {
                 val expression = cmd.replace("calculate", "").replace("what is", "").trim()
@@ -44,9 +44,11 @@ object CommandRouter {
             cmd.contains("search for") || cmd.contains("browse") -> {
                 val query = cmd.replace("search for", "").replace("browse", "").trim()
                 browseWeb(context, query)
+                "Searching for \$query."
             }
             cmd.contains("take a photo") || cmd.contains("open camera") -> {
                 openCamera(context)
+                "Opening camera."
             }
             else -> "Command not recognized."
         }
@@ -54,19 +56,13 @@ object CommandRouter {
 
     private fun calculateMath(expression: String): String {
         return try {
-            // Converts words to symbols
             val mathExpr = expression
-                .replace("plus", "+")
-                .replace("add", "+")
-                .replace("minus", "-")
-                .replace("subtract", "-")
-                .replace("times", "*")
-                .replace("multiply", "*")
-                .replace("divided by", "/")
-                .replace(" ", "")
+                .replace("plus", "+").replace("add", "+")
+                .replace("minus", "-").replace("subtract", "-")
+                .replace("times", "*").replace("multiply", "*")
+                .replace("divided by", "/").replace(" ", "")
             
-            // Simple regex to find numbers and operators
-            val match = Regex("([-+]?\\d*\\.?\\d+)([+\\-*/])([-+]?\\d*\\.?\\d+)").find(mathExpr)
+            val match = Regex("([-+]?\\\\d*\\\\.?\\\\d+)([+\\\\-*/])([-+]?\\\\d*\\\\.?\\\\d+)").find(mathExpr)
             if (match != null) {
                 val num1 = match.groupValues[1].toDouble()
                 val op = match.groupValues[2]
@@ -78,29 +74,21 @@ object CommandRouter {
                     "/" -> if (num2 != 0.0) num1 / num2 else return "Cannot divide by zero."
                     else -> return "Invalid operation."
                 }
-                if (result % 1.0 == 0.0) "The answer is ${result.toInt()}" else "The answer is $result"
-            } else {
-                "Could not understand the math expression."
-            }
-        } catch (e: Exception) {
-            "Math error."
-        }
+                if (result % 1.0 == 0.0) "The answer is \${result.toInt()}" else "The answer is \$result"
+            } else { "Could not understand the math expression." }
+        } catch (e: Exception) { "Math error." }
     }
 
     private fun browseWeb(context: Context, query: String) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=$query")).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=\$query")).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
             context.startActivity(intent)
         } catch (e: Exception) { }
     }
 
     private fun openCamera(context: Context) {
         try {
-            val intent = Intent("android.media.action.IMAGE_CAPTURE").apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
+            val intent = Intent("android.media.action.IMAGE_CAPTURE").apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
             context.startActivity(intent)
         } catch (e: Exception) { }
     }
@@ -131,12 +119,12 @@ object CommandRouter {
             if (cursor != null && cursor.moveToFirst()) {
                 val number = cursor.getString(0)
                 cursor.close()
-                val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$number")).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:\$number")).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
                 context.startActivity(intent)
-                return "Calling $name."
+                return "Calling \$name."
             }
         } catch (e: Exception) { }
-        return "Could not find contact: $name."
+        return "Could not find contact: \$name."
     }
 
     private fun openApp(context: Context, appName: String): String {
@@ -145,29 +133,21 @@ object CommandRouter {
             val packages = pm.getInstalledApplications(android.content.pm.PackageManager.GET_META_DATA)
             var targetPackage: String? = null
             var exactMatch = false
-
             for (app in packages) {
                 val label = pm.getApplicationLabel(app).toString().lowercase()
-                if (label == appName) {
-                    targetPackage = app.packageName
-                    exactMatch = true
-                    break
-                }
-                if (!exactMatch && label.contains(appName)) {
-                    targetPackage = app.packageName
-                }
+                if (label == appName) { targetPackage = app.packageName; exactMatch = true; break }
+                if (!exactMatch && label.contains(appName)) { targetPackage = app.packageName }
             }
-
             if (targetPackage != null) {
                 val intent = pm.getLaunchIntentForPackage(targetPackage)
                 if (intent != null) {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(intent)
-                    return "Opening $appName."
+                    return "Opening \$appName."
                 }
             }
         } catch (e: Exception) { }
-        return "Could not find app: $appName."
+        return "Could not find app: \$appName."
     }
 
     private fun readLastSms(context: Context): String {
@@ -176,7 +156,7 @@ object CommandRouter {
             if (cursor != null && cursor.moveToFirst()) {
                 val body = cursor.getString(0)
                 cursor.close()
-                return "Latest message: $body"
+                return "Latest message: \$body"
             }
         } catch (e: Exception) { }
         return "Could not read messages."

@@ -12,17 +12,18 @@ android {
         applicationId = "com.autonet.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 10
-        versionName = "10.0-Lite"
+        versionCode = 11
+        versionName = "11.0-Lite"
         
         ndk {
-            abiFilters += listOf("armeabi-v7a") // ✅ ONLY build for your 32-bit phone to save size
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true // ✅ Shrinks the app size
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {

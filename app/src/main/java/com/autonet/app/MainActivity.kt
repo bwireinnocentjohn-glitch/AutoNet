@@ -13,7 +13,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -44,7 +43,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Initialize TTS immediately for super fast responses
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) tts?.language = Locale.US
         }
@@ -73,9 +71,8 @@ fun AutoNetScreen(tts: TextToSpeech?) {
     var permissionsGranted by remember { mutableStateOf(false) }
     var isListening by remember { mutableStateOf(false) }
 
-    // Splash Screen Timer
     LaunchedEffect(Unit) {
-        delay(1500) // 1.5 seconds
+        delay(1500)
         showSplash = false
     }
 
@@ -104,9 +101,7 @@ fun AutoNetScreen(tts: TextToSpeech?) {
     LaunchedEffect(Unit) {
         if (!permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
             permissionLauncher.launch(permissions)
-        } else {
-            permissionsGranted = true
-        }
+        } else { permissionsGranted = true }
     }
 
     fun executeCommand(command: String) {
@@ -148,7 +143,6 @@ fun AutoNetScreen(tts: TextToSpeech?) {
 
     val neonGradient = Brush.linearGradient(colors = listOf(Color(0xFF000000), Color(0xFF003B46), Color(0xFF001F3F)))
 
-    // SPLASH SCREEN UI
     if (showSplash) {
         Column(
             modifier = Modifier.fillMaxSize().background(neonGradient),
@@ -162,7 +156,6 @@ fun AutoNetScreen(tts: TextToSpeech?) {
             CircularProgressIndicator(color = Color(0xFF00E5FF))
         }
     } else {
-        // MAIN UI
         Column(
             modifier = Modifier.fillMaxSize().background(neonGradient).verticalScroll(rememberScrollState()).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
