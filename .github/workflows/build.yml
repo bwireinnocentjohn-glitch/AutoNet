@@ -17,20 +17,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download AI Models
-        run: |
-          mkdir -p app/src/main/assets/
-          
-          echo "Downloading Vosk STT Model..."
-          curl -L -o vosk.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
-          unzip -q vosk.zip -d app/src/main/assets/
-          mv app/src/main/assets/vosk-model-small-en-us-0.15 app/src/main/assets/vosk-en
-          
-          echo "Downloading Piper TTS Model..."
-          curl -L -o piper.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-en_US-amy-low.tar.bz2
-          tar -xjf piper.tar.bz2 -C app/src/main/assets/
-          # ✅ FIXED: Removed the bad mv command. The tar command already put it in the right folder.
-
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -40,5 +26,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: AutoNet-Debug-APK
+          name: AutoNet-Lite-APK
           path: app/build/outputs/apk/debug/app-debug.apk

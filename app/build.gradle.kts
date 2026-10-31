@@ -12,17 +12,17 @@ android {
         applicationId = "com.autonet.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 9
-        versionName = "9.0-Offline"
+        versionCode = 10
+        versionName = "10.0-Lite"
         
         ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+            abiFilters += listOf("armeabi-v7a") // ✅ ONLY build for your 32-bit phone to save size
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true // ✅ Shrinks the app size
         }
     }
     compileOptions {
@@ -34,9 +34,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    aaptOptions {
-        noCompress("onnx", "bin", "txt", "json")
     }
 }
 
@@ -51,10 +48,4 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-
-    // ✅ VERIFIED: Vosk for STT
-    implementation("com.alphacephei:vosk-android:0.3.75")
-    
-    // ✅ VERIFIED: Sherpa-ONNX for TTS
-    implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.5") 
 }
