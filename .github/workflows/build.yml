@@ -1,0 +1,43 @@
+name: Build AutoNet APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Download AI Models
+        run: |
+          mkdir -p app/src/main/assets/models/whistle
+          mkdir -p app/src/main/assets/models/kitten-nano-en-v0_8-int8
+          
+          echo "Downloading Whistle STT..."
+          curl -L -o app/src/main/assets/models/whistle/whistle.cact "https://huggingface.co/cactus-compute/whistle/resolve/main/whistle.cact"
+          
+          echo "Downloading KittenTTS..."
+          curl -L -o app/src/main/assets/models/kitten-nano-en-v0_8-int8/model.int8.onnx "https://huggingface.co/csukuangfj2/kitten-nano-en-v0_8-int8/resolve/main/model.int8.onnx"
+          curl -L -o app/src/main/assets/models/kitten-nano-en-v0_8-int8/voices.bin "https://huggingface.co/csukuangfj2/kitten-nano-en-v0_8-int8/resolve/main/voices.bin"
+          curl -L -o app/src/main/assets/models/kitten-nano-en-v0_8-int8/tokens.txt "https://huggingface.co/csukuangfj2/kitten-nano-en-v0_8-int8/resolve/main/tokens.txt"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoNet-Debug-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
