@@ -71,10 +71,7 @@ fun AutoNetScreen(tts: TextToSpeech?) {
     var permissionsGranted by remember { mutableStateOf(false) }
     var isListening by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        delay(500)
-        showSplash = false
-    }
+    LaunchedEffect(Unit) { delay(500); showSplash = false }
 
     val permissions = arrayOf(
         Manifest.permission.CAMERA, Manifest.permission.CALL_PHONE,
@@ -90,18 +87,14 @@ fun AutoNetScreen(tts: TextToSpeech?) {
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                permissionsGranted = permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
-            }
+            if (event == Lifecycle.Event.ON_RESUME) { permissionsGranted = permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED } }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(Unit) {
-        if (!permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
-            permissionLauncher.launch(permissions)
-        } else { permissionsGranted = true }
+        if (!permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) { permissionLauncher.launch(permissions) } else { permissionsGranted = true }
     }
 
     fun executeCommand(command: String) {
@@ -116,6 +109,7 @@ fun AutoNetScreen(tts: TextToSpeech?) {
         Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
         }
     }
 
@@ -126,13 +120,10 @@ fun AutoNetScreen(tts: TextToSpeech?) {
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() { isListening = false }
-            override fun onError(error: Int) { isListening = false; outputLog = "Voice Error. Please type." }
+            override fun onError(error: Int) { isListening = false; outputLog = "Voice Error Code: $error. Please type." }
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    textCommand = matches[0]
-                    executeCommand(textCommand)
-                }
+                if (!matches.isNullOrEmpty()) { textCommand = matches[0]; executeCommand(textCommand) }
             }
             override fun onPartialResults(partialResults: Bundle?) {}
             override fun onEvent(eventType: Int, params: Bundle?) {}
@@ -144,20 +135,13 @@ fun AutoNetScreen(tts: TextToSpeech?) {
     val neonGradient = Brush.linearGradient(colors = listOf(Color(0xFF000000), Color(0xFF003B46), Color(0xFF001F3F)))
 
     if (showSplash) {
-        Column(
-            modifier = Modifier.fillMaxSize().background(neonGradient),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(modifier = Modifier.fillMaxSize().background(neonGradient), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Text("AutoNet", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
             Spacer(modifier = Modifier.height(16.dp))
             Text("Engineered by Ajon Inno", fontSize = 18.sp, color = Color(0xFF64FFDA))
         }
     } else {
-        Column(
-            modifier = Modifier.fillMaxSize().background(neonGradient).verticalScroll(rememberScrollState()).padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(modifier = Modifier.fillMaxSize().background(neonGradient).verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("AutoNet Lite", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
             Text("Fast Voice Automator", fontSize = 16.sp, color = Color(0xFF64FFDA), modifier = Modifier.padding(bottom = 24.dp))
 
@@ -168,8 +152,7 @@ fun AutoNetScreen(tts: TextToSpeech?) {
                             if (!permissionsGranted) { Toast.makeText(context, "Grant permissions first", Toast.LENGTH_SHORT).show(); return@Button }
                             speechRecognizer.startListening(speechIntent)
                         },
-                        modifier = Modifier.size(100.dp),
-                        shape = androidx.compose.foundation.shape.CircleShape,
+                        modifier = Modifier.size(100.dp), shape = androidx.compose.foundation.shape.CircleShape,
                         colors = ButtonDefaults.buttonColors(containerColor = if (isListening) Color(0xFFD50000) else Color(0xFF00E5FF))
                     ) { Icon(Icons.Default.Mic, contentDescription = "Mic", modifier = Modifier.size(48.dp), tint = Color.Black) }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -186,7 +169,7 @@ fun AutoNetScreen(tts: TextToSpeech?) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OutlinedTextField(
                             value = textCommand, onValueChange = { textCommand = it }, modifier = Modifier.weight(1f),
-                            placeholder = { Text("e.g., turn on flashlight", color = Color.Gray) },
+                            placeholder = { Text("e.g., turn off flashlight", color = Color.Gray) },
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF00E5FF), unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
