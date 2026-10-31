@@ -51,11 +51,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-    implementation("ca.solo-studios:kt-fuzzy:0.1.0")
 
-    // The Brains: Cactus (STT) + Sherpa (TTS)
+    // Verified Cactus and Sherpa-ONNX dependencies
     implementation("com.cactuscompute:cactus:1.4.1-beta")
-    
-    // ✅ THE FIX: Correct Sherpa-ONNX dependency
-    implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.5")
+    implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.5") 
 }

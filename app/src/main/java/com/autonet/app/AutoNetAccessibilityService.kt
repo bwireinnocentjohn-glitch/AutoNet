@@ -10,12 +10,12 @@ class AutoNetAccessibilityService : AccessibilityService() {
     private var tapCount = 0
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.eventType == AccessibilityEvent.TYPE_TOUCH_INTERACTION_UP) {
+        // ✅ FIX: Use TYPE_TOUCH_INTERACTION_END
+        if (event?.eventType == AccessibilityEvent.TYPE_TOUCH_INTERACTION_END) {
             val currentTime = SystemClock.elapsedRealtime()
             if (currentTime - lastTapTime < 300) {
                 tapCount++
                 if (tapCount == 3) {
-                    // Triple tap detected!
                     val intent = Intent(this, MainActivity::class.java).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     }

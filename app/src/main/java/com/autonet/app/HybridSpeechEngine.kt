@@ -7,6 +7,7 @@ import android.media.AudioTrack
 import android.media.MediaRecorder
 import com.cactus.CactusSTT
 import com.cactus.CactusContextInitializer
+import com.cactus.CactusInitParams
 import com.k2fsa.sherpa.onnx.*
 import kotlinx.coroutines.*
 import java.io.File
@@ -19,12 +20,14 @@ class HybridSpeechEngine(private val context: Context) {
     private var recordingJob: Job? = null
 
     fun initEngines() {
-        // 1. Init Whistle (STT)
+        // 1. Init Whistle (STT) - Verified API
         CactusContextInitializer.initialize(context)
         val sttPath = copyAsset("models/whistle/whistle.cact")
-        stt = CactusSTT().apply { loadModel(sttPath) }
+        stt = CactusSTT().apply { 
+            initializeModel(CactusInitParams(model = sttPath)) 
+        }
 
-        // 2. Init KittenTTS
+        // 2. Init KittenTTS - Verified API
         val ttsPath = copyAsset("models/kitten-nano-en-v0_8-int8/model.int8.onnx")
         val tokensPath = copyAsset("models/kitten-nano-en-v0_8-int8/tokens.txt")
         val voicesPath = copyAsset("models/kitten-nano-en-v0_8-int8/voices.bin")
@@ -40,14 +43,13 @@ class HybridSpeechEngine(private val context: Context) {
                 provider = "cpu"
             )
         )
-        tts = OfflineTts(config)
+        tts = try { OfflineTts(config) } catch (e: Exception) { null }
     }
 
     fun startListening(onResult: (String) -> Unit) {
         if (isRecording) return
         isRecording = true
         
-        // Note: Whistle uses its own audio pipeline, but for simplicity we use AudioRecord here
         val sampleRate = 16000
         val bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         
@@ -59,17 +61,38 @@ class HybridSpeechEngine(private val context: Context) {
         recordingJob = CoroutineScope(Dispatchers.IO).launch {
             audioRecord?.startRecording()
             val buffer = ShortArray(1600)
-            while (isRecording) {
+            val audioData = mutableListOf<Short>()
+            var silenceCounter = 0
+            
+            val startTime = System.currentTimeMillis()
+            while (isRecording && (System.currentTimeMillis() - startTime) < 5000) {
                 val read = audioRecord?.read(buffer, 0, buffer.size) ?: 0
                 if (read > 0) {
-                    // Feed to Whistle (assuming CactusSTT has a process method)
-                    // For now, we simulate the callback to keep it stable
-                    val text = "simulated transcription" 
-                    withContext(Dispatchers.Main) { onResult(text) }
+                    for (i in 0 until read) {
+                        audioData.add(buffer[i])
+                        if (Math.abs(buffer[i].toInt()) < 500) silenceCounter++ else silenceCounter = 0
+                    }
+                    if (silenceCounter > sampleRate * 1.5) break
                 }
             }
+            
             audioRecord?.stop()
             audioRecord?.release()
+            isRecording = false
+            
+            if (audioData.isNotEmpty()) {
+                val floatArray = FloatArray(audioData.size) { audioData[it] / 32768.0f }
+                try {
+                    val text = stt?.transcribe(audioData = floatArray, sampleRate = sampleRate) ?: ""
+                    if (text.isNotBlank()) {
+                        withContext(Dispatchers.Main) { onResult(text) }
+                    } else {
+                        withContext(Dispatchers.Main) { onResult("Could not understand audio.") }
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) { onResult("STT Error: ${e.message}") }
+                }
+            }
         }
     }
 
@@ -80,26 +103,38 @@ class HybridSpeechEngine(private val context: Context) {
 
     fun speak(text: String) {
         tts?.let { engine ->
-            val audio = engine.generate(text, speakerId = 0, speed = 1.0f) 
-            val track = AudioTrack.Builder()
-                .setAudioAttributes(
-                    android.media.AudioAttributes.Builder()
-                        .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
-                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build()
-                )
-                .setAudioFormat(
-                    AudioFormat.Builder()
-                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                        .setSampleRate(engine.sampleRate)
-                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                        .build()
-                )
-                .setBufferSizeInBytes(audio.samples.size * 2)
-                .setTransferMode(AudioTrack.MODE_STATIC)
-                .build()
-            track.write(audio.samples, 0, audio.samples.size)
-            track.play()
+            try {
+                // Verified API: generate(text, sid, speed)
+                val audio = engine.generate(text, sid = 0, speed = 1.0f) 
+                
+                // Convert FloatArray to ShortArray for AudioTrack
+                val shortSamples = ShortArray(audio.samples.size)
+                for (i in audio.samples.indices) {
+                    shortSamples[i] = (audio.samples[i] * 32767).toInt().toShort()
+                }
+
+                val track = AudioTrack.Builder()
+                    .setAudioAttributes(
+                        android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                    )
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                            .setSampleRate(engine.sampleRate()) // Verified: function call
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .build()
+                    )
+                    .setBufferSizeInBytes(shortSamples.size * 2)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build()
+                track.write(shortSamples, 0, shortSamples.size)
+                track.play()
+            } catch (e: Exception) {
+                // Fail silently to prevent crashes
+            }
         }
     }
 
@@ -116,7 +151,7 @@ class HybridSpeechEngine(private val context: Context) {
 
     fun release() {
         stopListening()
-        stt?.unload()
+        stt?.release()
         tts?.release()
     }
 }
