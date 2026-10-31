@@ -16,7 +16,6 @@ android {
         versionName = "7.0-Small"
         
         ndk {
-            // Keep both to ensure it installs on your phone and modern ones
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
         }
     }
@@ -36,7 +35,6 @@ android {
     buildFeatures {
         compose = true
     }
-    // Keep model files uncompressed for fast loading
     aaptOptions {
         noCompress("cact", "onnx", "bin", "txt")
     }
@@ -57,5 +55,7 @@ dependencies {
 
     // The Brains: Cactus (STT) + Sherpa (TTS)
     implementation("com.cactuscompute:cactus:1.4.1-beta")
-    implementation("com.github.k2-fsa:sherpa-onnx:v1.12.6") 
+    
+    // ✅ THE FIX: Correct Sherpa-ONNX dependency
+    implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.5")
 }
