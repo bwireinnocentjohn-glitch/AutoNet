@@ -67,12 +67,12 @@ fun AutoNetScreen(tts: TextToSpeech?) {
     
     var showSplash by remember { mutableStateOf(true) }
     var textCommand by remember { mutableStateOf("") }
-    var outputLog by remember { mutableStateOf("System Ready. Say or Type a command.") }
+    var outputLog by remember { mutableStateOf("System Ready.") }
     var permissionsGranted by remember { mutableStateOf(false) }
     var isListening by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        delay(1500)
+        delay(500)
         showSplash = false
     }
 
@@ -152,8 +152,6 @@ fun AutoNetScreen(tts: TextToSpeech?) {
             Text("AutoNet", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
             Spacer(modifier = Modifier.height(16.dp))
             Text("Engineered by Ajon Inno", fontSize = 18.sp, color = Color(0xFF64FFDA))
-            Spacer(modifier = Modifier.height(32.dp))
-            CircularProgressIndicator(color = Color(0xFF00E5FF))
         }
     } else {
         Column(
@@ -188,7 +186,7 @@ fun AutoNetScreen(tts: TextToSpeech?) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OutlinedTextField(
                             value = textCommand, onValueChange = { textCommand = it }, modifier = Modifier.weight(1f),
-                            placeholder = { Text("e.g., calculate 5 plus 10", color = Color.Gray) },
+                            placeholder = { Text("e.g., turn on flashlight", color = Color.Gray) },
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF00E5FF), unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
