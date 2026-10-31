@@ -36,11 +36,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private var speechEngine: HybridSpeechEngine? = null
+    private var speechEngine: ReliableSpeechEngine? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        speechEngine = HybridSpeechEngine(this)
+        speechEngine = ReliableSpeechEngine(this)
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(primary = Color(0xFF00E5FF))) {
                 AutoNetScreen(speechEngine)
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AutoNetScreen(speechEngine: HybridSpeechEngine?) {
+fun AutoNetScreen(speechEngine: ReliableSpeechEngine?) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     

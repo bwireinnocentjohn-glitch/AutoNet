@@ -32,14 +32,12 @@ object CommandRouter {
     fun execute(context: Context, text: String): String {
         val cleanText = text.lowercase(Locale.getDefault()).trim()
         
-        // 1. Exact Match
         for ((action, phrases) in commandMap) {
             if (phrases.any { cleanText.contains(it) }) {
                 return performAction(context, action, cleanText)
             }
         }
 
-        // 2. Built-in Fuzzy Match
         var bestMatch: String? = null
         var highestScore = 0.0
         for ((action, phrases) in commandMap) {
@@ -55,7 +53,6 @@ object CommandRouter {
             return performAction(context, bestMatch, cleanText)
         }
 
-        // 3. Dynamic Commands
         if (cleanText.contains("call")) {
             val name = cleanText.replace("call", "").trim()
             return callContact(context, name)
@@ -123,6 +120,106 @@ object CommandRouter {
         }
     }
 
-    // ... (Keep the helper functions: toggleFlashlight, adjustVolume, openWifiSettings, requestBluetoothEnable, callContact, openApp, setAlarm, extractTime, readLastSms) ...
-    // These are unchanged from the previous working version.
+    private fun toggleFlashlight(context: Context, turnOn: Boolean): Boolean {
+        return try {
+            val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+            val cameraId = cameraManager.cameraIdList.firstOrNull { id ->
+                cameraManager.getCameraCharacteristics(id).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+            } ?: return false
+            cameraManager.setTorchMode(cameraId, turnOn)
+            true
+        } catch (e: Exception) { false }
+    }
+
+    private fun adjustVolume(context: Context, up: Boolean) {
+        try {
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val direction = if (up) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER
+            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, AudioManager.FLAG_SHOW_UI)
+        } catch (e: Exception) { }
+    }
+
+    private fun openWifiSettings(context: Context) {
+        try {
+            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Intent(Settings.Panel.ACTION_WIFI) else Intent(Settings.ACTION_WIFI_SETTINGS)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        } catch (e: Exception) { }
+    }
+
+    private fun requestBluetoothEnable(context: Context) {
+        try {
+            val intent = Intent(android.bluetooth.BluetoothAdapter.ACTION_REQUEST_ENABLE).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+            context.startActivity(intent)
+        } catch (e: Exception) { }
+    }
+
+    private fun callContact(context: Context, name: String): String {
+        try {
+            val uri = Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI, Uri.encode(name))
+            val cursor = context.contentResolver.query(uri, arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER), null, null, null)
+            if (cursor != null && cursor.moveToFirst()) {
+                val number = cursor.getString(0)
+                cursor.close()
+                val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$number")).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                context.startActivity(intent)
+                return "Calling $name."
+            }
+        } catch (e: Exception) { }
+        return "Could not find contact: $name."
+    }
+
+    private fun openApp(context: Context, appName: String): String {
+        try {
+            val pm = context.packageManager
+            val packages = pm.getInstalledApplications(android.content.pm.PackageManager.GET_META_DATA)
+            for (app in packages) {
+                val label = pm.getApplicationLabel(app).toString().lowercase()
+                if (label.contains(appName.lowercase())) {
+                    val intent = pm.getLaunchIntentForPackage(app.packageName)
+                    if (intent != null) {
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                        return "Opening $appName."
+                    }
+                }
+            }
+        } catch (e: Exception) { }
+        return "Could not find app: $appName."
+    }
+
+    private fun setAlarm(context: Context, hour: Int, minute: Int) {
+        try {
+            val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
+                putExtra(AlarmClock.EXTRA_HOUR, hour)
+                putExtra(AlarmClock.EXTRA_MINUTES, minute)
+                putExtra(AlarmClock.EXTRA_SKIP_UI, true)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) { }
+    }
+
+    private fun extractTime(text: String): IntArray? {
+        val regex = Regex("(\\d{1,2})[: ](\\d{2})?\\s*(am|pm)?")
+        val match = regex.find(text) ?: return null
+        var hour = match.groupValues[1].toIntOrNull() ?: return null
+        val minute = match.groupValues[2].toIntOrNull() ?: 0
+        val amPm = match.groupValues[3].lowercase()
+        if (amPm == "pm" && hour < 12) hour += 12
+        if (amPm == "am" && hour == 12) hour = 0
+        return intArrayOf(hour, minute)
+    }
+
+    private fun readLastSms(context: Context): String {
+        try {
+            val cursor = context.contentResolver.query(Uri.parse("content://sms/inbox"), null, null, null, "date DESC")
+            if (cursor != null && cursor.moveToFirst()) {
+                val body = cursor.getString(cursor.getColumnIndexOrThrow("body"))
+                cursor.close()
+                return "Latest message: $body"
+            }
+        } catch (e: Exception) { }
+        return "Could not read messages."
+    }
 }

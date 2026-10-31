@@ -12,8 +12,8 @@ android {
         applicationId = "com.autonet.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 7
-        versionName = "7.0-Small"
+        versionCode = 9
+        versionName = "9.0-Offline"
         
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
@@ -36,7 +36,7 @@ android {
         compose = true
     }
     aaptOptions {
-        noCompress("cact", "onnx", "bin", "txt")
+        noCompress("onnx", "bin", "txt", "json")
     }
 }
 
@@ -52,7 +52,9 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // Verified Cactus and Sherpa-ONNX dependencies
-    implementation("com.cactuscompute:cactus:1.4.1-beta")
+    // ✅ VERIFIED: Vosk for STT
+    implementation("com.alphacephei:vosk-android:0.3.75")
+    
+    // ✅ VERIFIED: Sherpa-ONNX for TTS
     implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.5") 
 }

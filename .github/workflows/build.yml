@@ -19,16 +19,18 @@ jobs:
 
       - name: Download AI Models
         run: |
-          mkdir -p app/src/main/assets/models/whistle
-          mkdir -p app/src/main/assets/models/kitten-nano-en-v0_8-int8
+          mkdir -p app/src/main/assets/vosk-en
+          mkdir -p app/src/main/assets/vits-piper-en_US-amy-low
           
-          echo "Downloading Whistle STT..."
-          curl -L -o app/src/main/assets/models/whistle/whistle.cact "https://huggingface.co/cactus-compute/whistle/resolve/main/whistle.cact"
+          echo "Downloading Vosk STT Model..."
+          curl -L -o vosk.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+          unzip -q vosk.zip -d app/src/main/assets/
+          mv app/src/main/assets/vosk-model-small-en-us-0.15/* app/src/main/assets/vosk-en/
           
-          echo "Downloading KittenTTS..."
-          curl -L -o app/src/main/assets/models/kitten-nano-en-v0_8-int8/model.int8.onnx "https://huggingface.co/csukuangfj2/kitten-nano-en-v0_8-int8/resolve/main/model.int8.onnx"
-          curl -L -o app/src/main/assets/models/kitten-nano-en-v0_8-int8/voices.bin "https://huggingface.co/csukuangfj2/kitten-nano-en-v0_8-int8/resolve/main/voices.bin"
-          curl -L -o app/src/main/assets/models/kitten-nano-en-v0_8-int8/tokens.txt "https://huggingface.co/csukuangfj2/kitten-nano-en-v0_8-int8/resolve/main/tokens.txt"
+          echo "Downloading Piper TTS Model..."
+          curl -L -o piper.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-en_US-amy-low.tar.bz2
+          tar -xjf piper.tar.bz2 -C app/src/main/assets/
+          mv app/src/main/assets/vits-piper-en_US-amy-low/* app/src/main/assets/vits-piper-en_US-amy-low/
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
